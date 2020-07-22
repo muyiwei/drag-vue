@@ -3,7 +3,7 @@
     <dragbale>哈哈哈</dragbale>
     <dragbale>呀呀呀</dragbale>
     <dropContainer class="container"></dropContainer>
-    <div v-for="(item, index) in list" :key="index">{{ item }}</div>
+    
   </div>
 </template>
 
@@ -21,13 +21,6 @@ import dropContainer from "./components/dropContainer.vue";
   },
 })
 export default class App extends Vue {
-  list!: Array<any>;
-  created() {
-    this.list = [1, 2, 3, 4];
-    setTimeout(() => {
-      this.list.splice(1, 1);
-    }, 1000);
-  }
 }
 </script>
 

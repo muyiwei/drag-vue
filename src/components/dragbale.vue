@@ -1,5 +1,5 @@
 <template>
-    <div draggable = "true" @dragstart = "dragstart" @drag = "drag" class="dragable">
+    <div draggable = "true" @dragstart = "dragstart" @drag = "drag" class="dragable" :data-id="data.id">
         <slot></slot>
     </div>
 </template>
@@ -14,7 +14,10 @@ export default class Dragbale extends Vue {
   @Prop({}) data: any;
   @Prop({}) allDrag: any;
   dragstart(e: any) {
-    console.log(this.allDrag);
+    this.$emit("dragStart",
+      e,
+      this.data
+    );
   }
 
   drag(e: any) {
@@ -22,9 +25,6 @@ export default class Dragbale extends Vue {
       e,
       this.data
     );
-  }
-  mounted() {
-    console.log(this.data, this.allDrag);
   }
 }
 </script>

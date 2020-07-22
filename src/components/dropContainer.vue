@@ -1,11 +1,12 @@
 <template>
-  <div  @dragover = "dragover" @drop = "drop">
+  <div  @dragover = "dragover"  @drop = "drop">
     <dragbale
       v-for="(item) in dragList"
-      :key="item.text"
+      :key="item.id"
       :data="item"
       ref="dragItem"
       @dragMove="dragMove"
+      @dragStart="daragStart"
     >
       <div class="center" :class="[item.class]">
         {{ item.text }}
@@ -16,13 +17,15 @@
   </div>
 </template>
 <script lang="ts">
-import { Component, Vue } from "vue-property-decorator";
+import { Component, Vue, Watch} from "vue-property-decorator";
 import dragbale from "./dragbale.vue";
 import { Observable, Subject } from "rxjs";
 import { debounceTime, throttleTime } from "rxjs/operators";
 @Component({
+  name: "DropContainer",
   components: {
     dragbale,
+    
   },
 })
 export default class App extends Vue {
@@ -30,10 +33,11 @@ export default class App extends Vue {
   dragSubject!: Subject<DragEvent>;
   dragEl!: DragItem;
   list: any = [];
-  dotttedIndex!: number;
+  dotttedIndex = -1;
   dottedDragEl: DragItem = {
       class: "dotted",
-      text: "1"
+      text: "1",
+      id:-1,
   }
   created() {
     this.dragSubject = new Subject().pipe(throttleTime(200));
@@ -43,70 +47,86 @@ export default class App extends Vue {
       {
         class: "entity",
         text: "1",
+        id:1,
       },
       {
         class: "entity",
         text: "2",
+        id:2
       },
       {
         class: "entity",
         text: "3",
+        id:3
       },
       {
         class: "entity",
         text: "4",
+        id:4
       },
       {
         class: "entity",
         text: "5",
+        id:5
       },
       {
         class: "entity",
         text: "6",
+        id:6
       },
       {
         class: "entity",
         text: "7",
+        id:7
       },
       {
         class: "entity",
         text: "8",
+        id:8
       },
       {
         class: "entity",
         text: "9",
+        id:9
       },
       {
         class: "entity",
         text: "10",
+        id:10
       },
     ];
 
   }
 
-
+  daragStart(data: DragEvent, dragEl: DragItem) {
+      this.dragEl = dragEl;
+  }
   dragover(env: DragEvent) {
       env.preventDefault();
   }
   dragMove(data: DragEvent, dragEl: DragItem) {
 
-    this.dragEl = dragEl;
+    
     this.dragSubject && this.dragSubject.next(data);
   }
 
   drop(env: DragEvent) {
-      debugger;
+      console.log(this.dragList, "drop  removeDoot 前")
       this.removeDott();
       const moveIndex = this.getMoveIndex(env);
-      const dragIndex = this.getDragIndex(this.dragEl);
+
       const currentEl: any = this.dragList[moveIndex];
       if(moveIndex == -1)
       {
           return;
       }
-      this.dragList.splice(dragIndex,1);
-      this.dragList.splice(moveIndex, 1, this.dottedDragEl, currentEl);
-      debugger;
+       console.log(this.dragList, "drop  removeDoot 后")
+     // this.dragList.splice(moveIndex, 1, this.dragEl, currentEl);
+       console.log(this.dragList, " drop dragList")
+      const dragIndex = this.getDragIndex(this.dragEl);
+     // this.dragList.splice(dragIndex,1);
+
+      this.dotttedIndex = -1;
   }
 
   
@@ -114,13 +134,14 @@ export default class App extends Vue {
   removeDott() {
     if(this.dotttedIndex != -1)
     {
+        
         this.dragList.splice(this.dotttedIndex, 1);
     }
   }
 
   getMoveIndex(data: DragEvent) {
     let moveIndex = -1;
-    (this.$refs.dragItem as Array<HTMLElement>).forEach((v: any, index: number) => {
+    (this.$refs.dragItem as Array<any>).find((v: any, index: number) => {
       const isIn = this.isMoveOnElement({
         x: data.clientX,
         y: data.clientY,
@@ -131,24 +152,43 @@ export default class App extends Vue {
           return true;
       }
     });
+    console.log(moveIndex," moveIndex")
     return moveIndex;
   }
 
   //比较拖动元素和当前容器内的元素
   patchToOtherEl(data: DragEvent) {
-    (this.$refs.dragItem as Array<HTMLElement>).forEach((v, index) => {
-      const isIn = this.isMoveOnElement({
-        x: data.clientX,
-        y: data.clientY,
-        el: v,
-      });
-      if(isIn){
-          this.removeDott();
-          const currentEl: any = this.dragList[index];
-          this.dottedDragEl.text = this.dragEl.text;
-          this.dragList.splice(index, 1, this.dottedDragEl, currentEl);
-          this.dotttedIndex = index;
+    (this.$refs.dragItem as Array<any>).find((v, index) => {
+      if(this.getDragIndex(this.dragEl) != index){
+        const isIn = this.isMoveOnElement({
+          x: data.clientX,
+          y: data.clientY,
+          el: v.$el,
+        });
+        if(isIn){
+            console.log(this.dragList," removeDoot 前")
+           
+            console.log(this.dragList, " removeDoot 后");
+            let moveINdex = this.getElIndexById((v.$el as HTMLElement).getAttribute("data-id"));
+            let currentEl: any = this.dragList[moveINdex];
+            if(!currentEl|| (v.$el as HTMLElement).getAttribute("data-id") == "-1")
+            {
+              return v;
+            }
+             this.removeDott();              
+            if(moveINdex>this.dotttedIndex){
+              moveINdex--;
+              currentEl = this.dragList[moveINdex]
+            }
+            this.dottedDragEl.text = this.dragEl.text;
+            console.log(this.dottedDragEl, currentEl,moveINdex,"这是e",(v.$el as HTMLElement).getAttribute("data-id"))
+            this.dragList.splice(moveINdex, 1, this.dottedDragEl, currentEl);
+            this.dotttedIndex = moveINdex;
+            console.log(this.dragList)
+            return v;
+        }
       }
+
     });
   }
 
@@ -165,17 +205,32 @@ export default class App extends Vue {
     return false;
   }
 
-  getDragIndex(dragEl: DragItem){
+  getElIndexById(id: string|null){
       let index = -1;
-      this.dragList.forEach((v: DragItem, i: number) => {
-          if(v.text == dragEl.text)
+      this.dragList.find((v: DragItem, i: number) => {
+          if(v.id+"" == id)
           {
               index = i;
-              return true;
+              return v;
           }
       })
+      console.log(index," getINdex")
       return index;
   }
+  getDragIndex(dragEl: DragItem){
+      let index = -1;
+      this.dragList.find((v: DragItem, i: number) => {
+          if(v.id == dragEl.id)
+          {
+              index = i;
+              return v;
+          }
+      })
+      console.log(index," getDragIndex")
+      return index;
+  }
+  
+
 }
 </script>
 <style lang="less">
